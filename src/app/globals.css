@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    background-color: #0D0D0D;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .glow-button {
+    @apply bg-neon-cyan text-dark-bg px-8 py-4 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-neon-cyan/50;
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  .dark-card {
+    @apply bg-dark-card rounded-xl p-8 border border-gray-800 transition-all duration-300 hover:border-neon-cyan/30;
+  }
+  
+  .section-padding {
+    @apply py-20 px-4 md:px-8 lg:px-16;
+  }
+  
+  .text-gradient {
+    background: linear-gradient(135deg, #00FFD1, #7C3AED);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .portfolio-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+  }
+  
+  .service-card {
+    @apply dark-card text-center cursor-pointer transform transition-all duration-300 hover:scale-105;
+  }
+  
+  .review-card {
+    @apply dark-card p-6 text-center;
+  }
+  
+  .form-input {
+    @apply w-full bg-dark-bg border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-light-gray focus:border-neon-cyan focus:outline-none transition-colors duration-300;
+  }
+  
+  .star-rating {
+    @apply flex justify-center gap-1 text-2xl;
+  }
+  
+  .gold-star {
+    @apply text-gold;
+  }
+  
+  .loading-skeleton {
+    @apply animate-pulse bg-gray-800 rounded;
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .slide-in-left {
+    animation: slideInLeft 0.5s ease-out;
+  }
+  
+  .slide-in-right {
+    animation: slideInRight 0.5s ease-out;
+  }
+  
+  .hover-lift {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+  
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+}
