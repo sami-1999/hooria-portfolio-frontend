@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Star } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { apiRequest, API_CONFIG } from '../config/api'
 
 interface Review {
   id: string
@@ -56,7 +57,7 @@ export default function Reviews() {
     const fetchReviews = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:5000/api/reviews')
+        const response = await apiRequest(API_CONFIG.ENDPOINTS.REVIEWS)
         
         if (response.ok) {
           const data = await response.json()

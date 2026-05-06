@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiRequest, API_CONFIG } from '../config/api'
 
 export function useAdminAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -27,7 +28,7 @@ export function useAdminAuth() {
 
   const validateToken = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/admin/dashboard', {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.ADMIN_DASHBOARD, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -53,11 +54,8 @@ export function useAdminAuth() {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/admin/login', {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.ADMIN_LOGIN, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ email, password }),
       })
 

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Mail, Phone, Send } from 'lucide-react'
 import { useState } from 'react'
+import { apiRequest, API_CONFIG } from '../config/api'
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -58,11 +59,8 @@ export default function Contact() {
     setSubmitStatus('')
 
     try {
-      const response = await fetch('http://localhost:5000/api/submit-form', {
+      const response = await apiRequest('/api/submit-form', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       })
 

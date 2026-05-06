@@ -8,6 +8,7 @@ import Reviews from '@/components/Reviews'
 import Contact from '@/components/Contact'
 import Footer from '@/components/Footer'
 import { useEffect } from 'react'
+import { apiRequest } from '../config/api'
 
 export default function Home() {
   useEffect(() => {
@@ -21,11 +22,8 @@ export default function Home() {
           timestamp: new Date().toISOString()
         }
 
-        await fetch('http://localhost:5000/api/track-visit', {
+        await apiRequest('/api/track-visit', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify(pageData)
         })
       } catch (error) {
@@ -38,11 +36,8 @@ export default function Home() {
     // Track page sections when they come into view
     const trackSectionView = (sectionName: string) => {
       try {
-        fetch('http://localhost:5000/api/track-visit', {
+        apiRequest('/api/track-visit', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify({
             page: window.location.pathname,
             section: sectionName,

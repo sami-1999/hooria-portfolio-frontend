@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Phone, Calendar, Search, Filter, Trash2, Eye, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
+import { apiRequest, API_CONFIG } from '../../../config/api'
 
 interface Contact {
   id: string
@@ -52,7 +53,7 @@ export default function ContactsManagement() {
         ...(statusFilter !== 'all' && { status: statusFilter })
       })
 
-      const response = await fetch(`http://localhost:5000/api/admin/contacts?${params}`, {
+      const response = await apiRequest(`/api/admin/contacts?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -80,7 +81,7 @@ export default function ContactsManagement() {
     if (!token) return
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/contacts/${contactId}/status`, {
+      const response = await apiRequest(`/api/admin/contacts/${contactId}/status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -108,7 +109,7 @@ export default function ContactsManagement() {
     if (!token) return
 
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/contacts/${contactId}`, {
+      const response = await apiRequest(`/api/admin/contacts/${contactId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

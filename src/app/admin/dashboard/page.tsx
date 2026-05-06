@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart3, Users, Mail, Star, TrendingUp, Eye } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
+import { apiRequest, API_CONFIG } from '../../../config/api'
 
 interface DashboardStats {
   totalContacts: number
@@ -54,7 +55,7 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/admin/dashboard', {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.ADMIN_DASHBOARD, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

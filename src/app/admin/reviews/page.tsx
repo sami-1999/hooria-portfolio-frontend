@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Star, Search, Filter, Trash2, Eye, Edit, Plus, Download, ChevronLeft, ChevronRight, X, Check } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
+import { apiRequest, API_CONFIG } from '../../../config/api'
 
 interface Review {
   id: string
@@ -47,7 +48,7 @@ export default function ReviewsManagement() {
   const fetchReviews = async (token: string) => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:5000/api/reviews/admin', {
+      const response = await apiRequest('/api/reviews/admin', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -74,7 +75,7 @@ export default function ReviewsManagement() {
     if (!token) return
 
     try {
-      const response = await fetch('http://localhost:5000/api/reviews', {
+      const response = await apiRequest(API_CONFIG.ENDPOINTS.REVIEWS, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -101,7 +102,7 @@ export default function ReviewsManagement() {
     if (!token) return
 
     try {
-      const response = await fetch(`http://localhost:5000/api/reviews/${reviewId}`, {
+      const response = await apiRequest(`${API_CONFIG.ENDPOINTS.REVIEWS}/${reviewId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -131,7 +132,7 @@ export default function ReviewsManagement() {
     if (!token) return
 
     try {
-      const response = await fetch(`http://localhost:5000/api/reviews/${reviewId}`, {
+      const response = await apiRequest(`/api/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

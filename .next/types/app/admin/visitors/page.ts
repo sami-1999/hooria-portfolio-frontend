@@ -1,8 +1,8 @@
-// File: C:\Users\PC\Downloads\HOORIA PORTFOLIO\frontend\src\app\page.tsx
-import * as entry from '../../../src/app/page.js'
+// File: D:\MuhammadSami\laragon\www\video-editing-portfolio\hooria-portfolio-frontend\src\app\admin\visitors\page.tsx
+import * as entry from '../../../../../src/app/admin/visitors/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
-type TEntry = typeof import('../../../src/app/page.js')
+type TEntry = typeof import('../../../../../src/app/admin/visitors/page.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{

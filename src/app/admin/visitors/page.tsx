@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Users, Search, Calendar, Globe, Monitor, Download, BarChart3, TrendingUp, Eye } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
+import { apiRequest, API_CONFIG } from '../../../config/api'
 
 interface Visitor {
   id: string
@@ -46,14 +47,14 @@ export default function VisitorsManagement() {
       setLoading(true)
       
       // Fetch visitor stats
-      const statsResponse = await fetch('http://localhost:5000/api/admin/stats', {
+      const statsResponse = await apiRequest('/api/admin/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       })
 
-      // Fetch all visitors (we'll need to add this endpoint to the backend)
-      const visitorsResponse = await fetch('http://localhost:5000/api/track-visit/stats', {
+      // Fetch all visitors (we'll need to add this endpoint to backend)
+      const visitorsResponse = await apiRequest('/api/track-visit/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

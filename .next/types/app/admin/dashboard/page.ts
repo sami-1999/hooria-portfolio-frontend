@@ -1,4 +1,4 @@
-// File: C:\Users\PC\Downloads\HOORIA PORTFOLIO\frontend\src\app\admin\dashboard\page.tsx
+// File: D:\MuhammadSami\laragon\www\video-editing-portfolio\hooria-portfolio-frontend\src\app\admin\dashboard\page.tsx
 import * as entry from '../../../../../src/app/admin/dashboard/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
