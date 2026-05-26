@@ -6,16 +6,21 @@ import { FolderKanban, Search, Filter, Trash2, Edit, Plus, Download, X, Check } 
 import AdminLayout from '@/components/admin/AdminLayout'
 import { apiRequest, API_CONFIG } from '../../../config/api'
 
+type ProjectVideoType = 'short_video' | 'long_video' | 'ai_video'
+type VideoSourceType = 'youtube' | 'upload'
+
 interface Project {
   id: string
   title: string
   category: string
+  project_type?: ProjectVideoType
+  video_source?: VideoSourceType
+  youtube_url?: string
+  uploaded_video_url?: string
   duration: string
   aspect_ratio?: string
-  thumbnail?: string
   description: string
   tags: string[] | string
-  project_url?: string
   active: boolean
   createdAt?: string
 }
@@ -29,15 +34,18 @@ export default function ProjectsManagement() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     category: 'PROJECT',
+    project_type: 'short_video' as ProjectVideoType,
+    video_source: 'youtube' as VideoSourceType,
+    youtube_url: '',
+    uploaded_video_url: '',
     duration: 'N/A',
     aspect_ratio: '16:9',
-    thumbnail: '',
     description: '',
     tags: '',
-    project_url: '',
     active: true
   })
 
@@ -83,19 +91,27 @@ export default function ProjectsManagement() {
     if (!token) return
 
     try {
+      if (!validateVideoSource()) return
+
+      const payload = {
+        ...formData,
+        type: formData.project_type,
+        video_url: formData.youtube_url,
+        tags: formData.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      }
+
+      const { body, headers } = buildProjectRequest(payload)
+
       const response = await apiRequest(API_CONFIG.ENDPOINTS.PROJECTS, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          ...headers
         },
-        body: JSON.stringify({
-          ...formData,
-          tags: formData.tags
-            .split(',')
-            .map((tag) => tag.trim())
-            .filter(Boolean)
-        })
+        body
       })
 
       if (response.ok) {
@@ -116,19 +132,27 @@ export default function ProjectsManagement() {
     if (!token) return
 
     try {
+      if (!validateVideoSource()) return
+
+      const payload = {
+        ...formData,
+        type: formData.project_type,
+        video_url: formData.youtube_url,
+        tags: formData.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      }
+
+      const { body, headers } = buildProjectRequest(payload)
+
       const response = await apiRequest(`${API_CONFIG.ENDPOINTS.PROJECTS}/${projectId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          ...headers
         },
-        body: JSON.stringify({
-          ...formData,
-          tags: formData.tags
-            .split(',')
-            .map((tag) => tag.trim())
-            .filter(Boolean)
-        })
+        body
       })
 
       if (response.ok) {
@@ -195,18 +219,24 @@ export default function ProjectsManagement() {
   }
 
   const openEditModal = (project: Project) => {
+    const normalizedVideoSource: VideoSourceType =
+      project.video_source || (project.uploaded_video_url ? 'upload' : 'youtube')
+
     setSelectedProject(project)
     setFormData({
       title: project.title || '',
       category: project.category || 'PROJECT',
+      project_type: project.project_type || 'short_video',
+      video_source: normalizedVideoSource,
+      youtube_url: project.youtube_url || '',
+      uploaded_video_url: project.uploaded_video_url || '',
       duration: project.duration || 'N/A',
       aspect_ratio: project.aspect_ratio || '16:9',
-      thumbnail: project.thumbnail || '',
       description: project.description || '',
       tags: Array.isArray(project.tags) ? project.tags.join(', ') : project.tags || '',
-      project_url: project.project_url || '',
       active: project.active
     })
+    setUploadedVideoFile(null)
     setShowEditModal(true)
   }
 
@@ -214,19 +244,78 @@ export default function ProjectsManagement() {
     setFormData({
       title: '',
       category: 'PROJECT',
+      project_type: 'short_video',
+      video_source: 'youtube',
+      youtube_url: '',
+      uploaded_video_url: '',
       duration: 'N/A',
       aspect_ratio: '16:9',
-      thumbnail: '',
       description: '',
       tags: '',
-      project_url: '',
       active: true
     })
+    setUploadedVideoFile(null)
+  }
+
+  const buildProjectRequest = (payload: Record<string, any>) => {
+    if (payload.video_source === 'upload' && uploadedVideoFile) {
+      const requestFormData = new FormData()
+
+      Object.entries(payload).forEach(([key, value]) => {
+        if (key === 'uploaded_video_url') return
+
+        if (key === 'tags') {
+          requestFormData.append('tags', JSON.stringify(value))
+          return
+        }
+
+        requestFormData.append(key, String(value ?? ''))
+      })
+
+      requestFormData.append('uploaded_video_file', uploadedVideoFile)
+
+      return {
+        body: requestFormData,
+        headers: {} as Record<string, string>
+      }
+    }
+
+    return {
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  }
+
+  const validateVideoSource = () => {
+    const hasYouTube = Boolean(formData.youtube_url.trim())
+    const hasUploadFile = Boolean(uploadedVideoFile)
+    const hasExistingUploadUrl = Boolean(formData.uploaded_video_url.trim())
+    const hasUpload = hasUploadFile || hasExistingUploadUrl
+
+    if (formData.video_source === 'youtube' && !hasYouTube) {
+      setError('Please add a YouTube URL when video source is YouTube.')
+      return false
+    }
+
+    if (formData.video_source === 'upload' && !hasUpload) {
+      setError('Please upload a video file when video source is Upload.')
+      return false
+    }
+
+    if (hasYouTube && hasUpload) {
+      setError('Use only one video source at a time: YouTube URL OR uploaded video file.')
+      return false
+    }
+
+    setError('')
+    return true
   }
 
   const exportProjects = () => {
     const csvContent = [
-      ['Title', 'Category', 'Duration', 'Aspect Ratio', 'Description', 'Tags', 'Project URL', 'Status'],
+      ['Title', 'Category', 'Duration', 'Aspect Ratio', 'Description', 'Tags', 'Status'],
       ...projects.map((project) => [
         project.title,
         project.category,
@@ -234,7 +323,6 @@ export default function ProjectsManagement() {
         project.aspect_ratio || '16:9',
         (project.description || '').replace(/,/g, ';'),
         (Array.isArray(project.tags) ? project.tags.join('|') : project.tags || '').replace(/,/g, ';'),
-        project.project_url || '',
         project.active ? 'Active' : 'Inactive'
       ])
     ]
@@ -333,6 +421,7 @@ export default function ProjectsManagement() {
                 <div>
                   <h3 className="font-semibold text-white text-lg">{project.title}</h3>
                   <p className="text-xs text-neon-cyan mt-1">{project.category}</p>
+                  <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">{project.project_type || 'short_video'}</p>
                 </div>
                 <span
                   className={`text-xs px-2 py-1 rounded ${
@@ -406,11 +495,65 @@ export default function ProjectsManagement() {
                   <input type="text" placeholder="Project title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className="form-input" />
                   <input type="text" placeholder="Category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="form-input" />
                   <div className="grid grid-cols-2 gap-4">
+                    <select
+                      value={formData.project_type}
+                      onChange={(e) => setFormData({ ...formData, project_type: e.target.value as ProjectVideoType })}
+                      className="form-input"
+                    >
+                      <option value="short_video">Short Video</option>
+                      <option value="long_video">Long Video</option>
+                      <option value="ai_video">AI Video</option>
+                    </select>
+                    <select
+                      value={formData.video_source}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          video_source: e.target.value as VideoSourceType,
+                          youtube_url: e.target.value === 'youtube' ? prev.youtube_url : '',
+                          uploaded_video_url: e.target.value === 'upload' ? prev.uploaded_video_url : ''
+                        }))
+                      }
+                      className="form-input"
+                    >
+                      <option value="youtube">YouTube Link</option>
+                      <option value="upload">Uploaded Video File</option>
+                    </select>
+                  </div>
+                  {formData.video_source === 'youtube' ? (
+                    <input
+                      type="url"
+                      placeholder="YouTube URL"
+                      value={formData.youtube_url}
+                      onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value, uploaded_video_url: '' })}
+                      className="form-input"
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null
+                          setUploadedVideoFile(file)
+                          setFormData({ ...formData, youtube_url: '' })
+                        }}
+                        className="form-input"
+                      />
+                      {formData.uploaded_video_url && !uploadedVideoFile && (
+                        <p className="text-xs text-gray-400">
+                          Existing uploaded video is already saved. Select a new file only if you want to replace it.
+                        </p>
+                      )}
+                      {uploadedVideoFile && (
+                        <p className="text-xs text-neon-cyan">Selected file: {uploadedVideoFile.name}</p>
+                      )}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
                     <input type="text" placeholder="Duration" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} className="form-input" />
                     <input type="text" placeholder="Aspect ratio (16:9)" value={formData.aspect_ratio} onChange={(e) => setFormData({ ...formData, aspect_ratio: e.target.value })} className="form-input" />
                   </div>
-                  <input type="url" placeholder="Thumbnail URL" value={formData.thumbnail} onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })} className="form-input" />
-                  <input type="url" placeholder="Project URL (optional)" value={formData.project_url} onChange={(e) => setFormData({ ...formData, project_url: e.target.value })} className="form-input" />
                   <input type="text" placeholder="Tags (comma separated)" value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} className="form-input" />
                   <textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="form-input min-h-[100px]" />
                   <div className="flex items-center gap-2">

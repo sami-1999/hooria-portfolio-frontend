@@ -1,18 +1,63 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, ExternalLink } from 'lucide-react'
+import { ArrowRight, PlayCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { apiRequest, API_CONFIG } from '../config/api'
+
+type ProjectType = 'short_video' | 'long_video' | 'ai_video'
+type LegacyProjectType = 'SHORT_VIDEO' | 'LONG_VIDEO' | 'AI_VIDEO'
+type VideoSourceType = 'youtube' | 'upload'
+
+const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  short_video: 'SHORT VIDEO',
+  long_video: 'LONG VIDEO',
+  ai_video: 'AI VIDEO'
+}
+
+const LEGACY_PROJECT_TYPE_MAP: Record<LegacyProjectType, ProjectType> = {
+  SHORT_VIDEO: 'short_video',
+  LONG_VIDEO: 'long_video',
+  AI_VIDEO: 'ai_video'
+}
+
+const normalizeProjectType = (type?: string): ProjectType | undefined => {
+  if (!type) return undefined
+
+  if (type in PROJECT_TYPE_LABELS) {
+    return type as ProjectType
+  }
+
+  if (type in LEGACY_PROJECT_TYPE_MAP) {
+    return LEGACY_PROJECT_TYPE_MAP[type as LegacyProjectType]
+  }
+
+  return undefined
+}
+
+const getProjectTypeLabel = (type?: string, fallback = 'PROJECT') => {
+  const normalizedType = normalizeProjectType(type)
+  return normalizedType ? PROJECT_TYPE_LABELS[normalizedType] : fallback
+}
+
+const getYouTubeEmbedUrl = (url?: string) => {
+  if (!url) return ''
+
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/)
+  return match ? `https://www.youtube.com/embed/${match[1]}` : ''
+}
 
 interface PortfolioItem {
   id: string | number
   title: string
   category: string
+  type?: ProjectType | LegacyProjectType | string
+  videoSource?: VideoSourceType
   duration: string
   aspectRatio: string
-  thumbnail?: string
   description: string
   tags: string[]
-  projectUrl?: string
+  videoUrl?: string
+  youtubeUrl?: string
+  uploadedVideoUrl?: string
 }
 
 const fallbackPortfolioItems: PortfolioItem[] = [
@@ -20,19 +65,20 @@ const fallbackPortfolioItems: PortfolioItem[] = [
     id: 1,
     title: 'E-commerce Product Showcase',
     category: 'AI VIDEO ADS',
+    type: 'ai_video',
     duration: '0:30',
     aspectRatio: '9:16',
-    thumbnail: '/api/placeholder/400/600',
     description: 'High-converting product video for social media campaigns',
-    tags: ['UGC Style', 'Conversion Focused']
+    tags: ['UGC Style', 'Conversion Focused'],
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
   },
   {
     id: 2,
     title: 'Brand Story Documentary',
     category: 'LONG FORM',
+    type: 'long_video',
     duration: '12:45',
     aspectRatio: '16:9',
-    thumbnail: '/api/placeholder/600/400',
     description: 'Comprehensive brand storytelling with cinematic editing',
     tags: ['Documentary', 'Cinematic']
   },
@@ -40,9 +86,9 @@ const fallbackPortfolioItems: PortfolioItem[] = [
     id: 3,
     title: 'Fitness Challenge Series',
     category: 'SHORT FORM',
+    type: 'short_video',
     duration: '0:15',
     aspectRatio: '9:16',
-    thumbnail: '/api/placeholder/400/600',
     description: 'Engaging fitness content for social media platforms',
     tags: ['Reels', 'TikTok']
   },
@@ -50,9 +96,9 @@ const fallbackPortfolioItems: PortfolioItem[] = [
     id: 4,
     title: 'Tech Product Launch',
     category: 'AI VIDEO ADS',
+    type: 'ai_video',
     duration: '0:45',
     aspectRatio: '1:1',
-    thumbnail: '/api/placeholder/400/400',
     description: 'Innovative tech product promotional video',
     tags: ['Product Launch', 'AI Enhanced']
   },
@@ -60,9 +106,9 @@ const fallbackPortfolioItems: PortfolioItem[] = [
     id: 5,
     title: 'Travel Vlog Episode',
     category: 'LONG FORM',
+    type: 'long_video',
     duration: '18:20',
     aspectRatio: '16:9',
-    thumbnail: '/api/placeholder/600/400',
     description: 'Cinematic travel documentary with storytelling',
     tags: ['Travel', 'Storytelling']
   },
@@ -70,9 +116,9 @@ const fallbackPortfolioItems: PortfolioItem[] = [
     id: 6,
     title: 'Food Recipe Quick Cut',
     category: 'SHORT FORM',
+    type: 'short_video',
     duration: '0:20',
     aspectRatio: '9:16',
-    thumbnail: '/api/placeholder/400/600',
     description: 'Fast-paced recipe video for social media',
     tags: ['Food', 'Quick Cuts']
   }
@@ -97,16 +143,19 @@ export default function Portfolio() {
               id: project.id ?? index + 1,
               title: project.title ?? 'Untitled Project',
               category: project.category ?? 'PROJECT',
+              type: project.type ?? project.project_type ?? undefined,
+              videoSource: project.videoSource ?? project.video_source ?? undefined,
               duration: project.duration ?? 'N/A',
               aspectRatio: project.aspectRatio ?? project.aspect_ratio ?? '16:9',
-              thumbnail: project.thumbnail ?? project.image ?? '',
               description: project.description ?? '',
               tags: Array.isArray(project.tags)
                 ? project.tags
                 : typeof project.tags === 'string'
                 ? project.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
                 : [],
-              projectUrl: project.projectUrl ?? project.project_url ?? ''
+              videoUrl: project.videoUrl ?? project.video_url ?? '',
+              youtubeUrl: project.youtubeUrl ?? project.youtube_url ?? '',
+              uploadedVideoUrl: project.uploadedVideoUrl ?? project.uploaded_video_url ?? ''
             }))
 
             setPortfolioItems(mappedProjects)
@@ -205,32 +254,51 @@ export default function Portfolio() {
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: index * 0.1 }}
               whileHover={{ scale: 1.05 }}
-              onClick={() => {
-                if (item.projectUrl) {
-                  window.open(item.projectUrl, '_blank')
-                } else {
-                  window.open('#contact', '_self')
-                }
-              }}
             >
-              {/* Thumbnail */}
+              {/* Video */}
               <div className="relative aspect-video bg-dark-bg overflow-hidden">
-                {item.thumbnail ? (
-                  <img
-                    src={item.thumbnail}
-                    alt={item.title}
-                    className="absolute inset-0 w-full h-full object-cover"
+                {item.videoSource === 'youtube' && getYouTubeEmbedUrl(item.youtubeUrl || item.videoUrl) ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(item.youtubeUrl || item.videoUrl)}
+                    title={item.title}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
                   />
-                ) : null}
-                <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/20 to-purple-accent/20" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <ExternalLink className="w-12 h-12 text-neon-cyan opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
+                ) : (item.videoSource === 'upload' && (item.uploadedVideoUrl || item.videoUrl)) ? (
+                  <video
+                    src={item.uploadedVideoUrl || item.videoUrl}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : getYouTubeEmbedUrl(item.youtubeUrl || item.videoUrl) ? (
+                  <iframe
+                    src={getYouTubeEmbedUrl(item.youtubeUrl || item.videoUrl)}
+                    title={item.title}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                ) : (item.uploadedVideoUrl || item.videoUrl) ? (
+                  <video
+                    src={item.uploadedVideoUrl || item.videoUrl}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-neon-cyan/20 to-purple-accent/20">
+                    <PlayCircle className="w-14 h-14 text-neon-cyan/80" />
+                  </div>
+                )}
                 
                 {/* Category Badge */}
                 <div className="absolute top-4 left-4 px-3 py-1 bg-dark-bg/80 backdrop-blur-sm rounded-full">
                   <span className="text-xs font-semibold text-neon-cyan">
-                    {item.category}
+                    {getProjectTypeLabel(item.type, item.category)}
                   </span>
                 </div>
                 

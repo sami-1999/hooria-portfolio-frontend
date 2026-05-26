@@ -6,6 +6,9 @@ import { Star, Search, Filter, Trash2, Eye, Edit, Plus, Download, ChevronLeft, C
 import AdminLayout from '@/components/admin/AdminLayout'
 import { apiRequest, API_CONFIG } from '../../../config/api'
 
+const DEFAULT_AVATAR =
+  'data:image/svg+xml,%3Csvg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Crect width="160" height="160" rx="80" fill="%230B1020"/%3E%3Ccircle cx="80" cy="58" r="30" fill="%2300F5FF" fill-opacity="0.28"/%3E%3Cpath d="M32 137c8-31 27-48 48-48s40 17 48 48" fill="%238B5CF6" fill-opacity="0.32"/%3E%3Ccircle cx="80" cy="80" r="76" stroke="%2300F5FF" stroke-opacity="0.35" stroke-width="8"/%3E%3C/svg%3E'
+
 interface Review {
   id: string
   name: string
@@ -271,13 +274,14 @@ export default function ReviewsManagement() {
             <div key={review.id} className="dark-card p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  {review.image && (
-                    <img
-                      src={review.image}
-                      alt={review.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  )}
+                  <img
+                    src={review.image || DEFAULT_AVATAR}
+                    alt={review.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                    onError={(event) => {
+                      event.currentTarget.src = DEFAULT_AVATAR
+                    }}
+                  />
                   <div>
                     <h3 className="font-semibold text-white">{review.name}</h3>
                     <div className="flex items-center gap-1">

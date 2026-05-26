@@ -928,6 +928,9 @@ video {
 .h-full {
   height: 100%;
 }
+.h-14 {
+  height: 3.5rem;
+}
 .max-h-\[90vh\] {
   max-height: 90vh;
 }
@@ -963,6 +966,9 @@ video {
 }
 .w-full {
   width: 100%;
+}
+.w-14 {
+  width: 3.5rem;
 }
 .min-w-\[20px\] {
   min-width: 20px;
@@ -1377,6 +1383,9 @@ video {
   font-size: 0.75rem;
   line-height: 1rem;
 }
+.text-\[10px\] {
+  font-size: 10px;
+}
 .font-bold {
   font-weight: 700;
 }
@@ -1394,6 +1403,9 @@ video {
 }
 .tracking-wider {
   letter-spacing: 0.05em;
+}
+.tracking-wide {
+  letter-spacing: 0.025em;
 }
 .text-blue-400 {
   --tw-text-opacity: 1;
@@ -1446,6 +1458,9 @@ video {
 .text-yellow-400 {
   --tw-text-opacity: 1;
   color: rgb(250 204 21 / var(--tw-text-opacity, 1));
+}
+.text-neon-cyan\/80 {
+  color: rgb(0 255 209 / 0.8);
 }
 .opacity-0 {
   opacity: 0;
