@@ -16,6 +16,9 @@ export const API_CONFIG = {
     
     // Review endpoints
     REVIEWS: '/api/reviews',
+
+    // Project endpoints
+    PROJECTS: '/api/projects',
     
     // Visitor endpoints
     VISITORS: '/api/visitors',

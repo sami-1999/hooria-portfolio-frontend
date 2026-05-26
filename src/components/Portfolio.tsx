@@ -1,7 +1,21 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, ExternalLink } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { apiRequest, API_CONFIG } from '../config/api'
 
-const portfolioItems = [
+interface PortfolioItem {
+  id: string | number
+  title: string
+  category: string
+  duration: string
+  aspectRatio: string
+  thumbnail?: string
+  description: string
+  tags: string[]
+  projectUrl?: string
+}
+
+const fallbackPortfolioItems: PortfolioItem[] = [
   {
     id: 1,
     title: 'E-commerce Product Showcase',
@@ -65,6 +79,93 @@ const portfolioItems = [
 ]
 
 export default function Portfolio() {
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true)
+        const response = await apiRequest(API_CONFIG.ENDPOINTS.PROJECTS)
+
+        if (response.ok) {
+          const data = await response.json()
+          const projects = Array.isArray(data?.data) ? data.data : []
+
+          if (projects.length > 0) {
+            const mappedProjects: PortfolioItem[] = projects.map((project: any, index: number) => ({
+              id: project.id ?? index + 1,
+              title: project.title ?? 'Untitled Project',
+              category: project.category ?? 'PROJECT',
+              duration: project.duration ?? 'N/A',
+              aspectRatio: project.aspectRatio ?? project.aspect_ratio ?? '16:9',
+              thumbnail: project.thumbnail ?? project.image ?? '',
+              description: project.description ?? '',
+              tags: Array.isArray(project.tags)
+                ? project.tags
+                : typeof project.tags === 'string'
+                ? project.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+                : [],
+              projectUrl: project.projectUrl ?? project.project_url ?? ''
+            }))
+
+            setPortfolioItems(mappedProjects)
+          } else {
+            setPortfolioItems(fallbackPortfolioItems)
+          }
+        } else {
+          setPortfolioItems(fallbackPortfolioItems)
+        }
+      } catch (error) {
+        console.error('Error fetching projects:', error)
+        setPortfolioItems(fallbackPortfolioItems)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProjects()
+  }, [])
+
+  if (loading) {
+    return (
+      <section id="portfolio" className="section-padding bg-dark-card">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            className="flex justify-between items-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                THE <span className="text-gradient">TIMELINE</span>
+              </h2>
+              <p className="text-light-gray text-lg">Loading projects...</p>
+            </div>
+          </motion.div>
+
+          <div className="portfolio-grid">
+            {[...Array(6)].map((_, index) => (
+              <div key={index} className="animate-pulse rounded-xl overflow-hidden bg-dark-bg">
+                <div className="aspect-video bg-gray-800" />
+                <div className="p-6">
+                  <div className="h-6 bg-gray-800 rounded mb-3" />
+                  <div className="h-4 bg-gray-800 rounded mb-4" />
+                  <div className="flex gap-2">
+                    <div className="h-6 w-20 bg-gray-800 rounded" />
+                    <div className="h-6 w-20 bg-gray-800 rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id="portfolio" className="section-padding bg-dark-card">
       <div className="max-w-6xl mx-auto">
@@ -104,10 +205,23 @@ export default function Portfolio() {
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: index * 0.1 }}
               whileHover={{ scale: 1.05 }}
-              onClick={() => window.open('#contact', '_self')}
+              onClick={() => {
+                if (item.projectUrl) {
+                  window.open(item.projectUrl, '_blank')
+                } else {
+                  window.open('#contact', '_self')
+                }
+              }}
             >
               {/* Thumbnail */}
               <div className="relative aspect-video bg-dark-bg overflow-hidden">
+                {item.thumbnail ? (
+                  <img
+                    src={item.thumbnail}
+                    alt={item.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : null}
                 <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/20 to-purple-accent/20" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <ExternalLink className="w-12 h-12 text-neon-cyan opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

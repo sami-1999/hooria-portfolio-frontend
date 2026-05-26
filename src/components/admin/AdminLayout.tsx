@@ -7,6 +7,7 @@ import {
   Users, 
   Mail, 
   Star, 
+  FolderKanban,
   TrendingUp, 
   LogOut, 
   Menu, 
@@ -57,6 +58,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: '/admin/reviews',
       icon: Star,
       current: pathname === '/admin/reviews'
+    },
+    {
+      name: 'Projects',
+      href: '/admin/projects',
+      icon: FolderKanban,
+      current: pathname === '/admin/projects'
     },
     {
       name: 'Visitors',
