@@ -38,6 +38,7 @@ export default function ProjectsManagement() {
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null)
   const [compressingVideo, setCompressingVideo] = useState(false)
   const [compressionProgress, setCompressionProgress] = useState(0)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     category: 'PROJECT',
@@ -96,25 +97,34 @@ export default function ProjectsManagement() {
     try {
       if (!validateVideoSource()) return
 
+      let uploadedVideoUrl = formData.uploaded_video_url
+      if (formData.video_source === 'upload' && uploadedVideoFile) {
+        setUploadingVideo(true)
+        try {
+          uploadedVideoUrl = await uploadVideoAndGetPublicUrl(token, uploadedVideoFile)
+        } finally {
+          setUploadingVideo(false)
+        }
+      }
+
       const payload = {
         ...formData,
         type: formData.project_type,
         video_url: formData.youtube_url,
+        uploaded_video_url: uploadedVideoUrl,
         tags: formData.tags
           .split(',')
           .map((tag) => tag.trim())
           .filter(Boolean)
       }
 
-      const { body, headers } = buildProjectRequest(payload)
-
       const response = await apiRequest(API_CONFIG.ENDPOINTS.PROJECTS, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          ...headers
+          'Content-Type': 'application/json'
         },
-        body
+        body: JSON.stringify(payload)
       })
 
       if (response.ok) {
@@ -137,25 +147,34 @@ export default function ProjectsManagement() {
     try {
       if (!validateVideoSource()) return
 
+      let uploadedVideoUrl = formData.uploaded_video_url
+      if (formData.video_source === 'upload' && uploadedVideoFile) {
+        setUploadingVideo(true)
+        try {
+          uploadedVideoUrl = await uploadVideoAndGetPublicUrl(token, uploadedVideoFile)
+        } finally {
+          setUploadingVideo(false)
+        }
+      }
+
       const payload = {
         ...formData,
         type: formData.project_type,
         video_url: formData.youtube_url,
+        uploaded_video_url: uploadedVideoUrl,
         tags: formData.tags
           .split(',')
           .map((tag) => tag.trim())
           .filter(Boolean)
       }
 
-      const { body, headers } = buildProjectRequest(payload)
-
       const response = await apiRequest(`${API_CONFIG.ENDPOINTS.PROJECTS}/${projectId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
-          ...headers
+          'Content-Type': 'application/json'
         },
-        body
+        body: JSON.stringify(payload)
       })
 
       if (response.ok) {
@@ -242,6 +261,7 @@ export default function ProjectsManagement() {
     setUploadedVideoFile(null)
     setCompressingVideo(false)
     setCompressionProgress(0)
+    setUploadingVideo(false)
     setShowEditModal(true)
   }
 
@@ -262,6 +282,7 @@ export default function ProjectsManagement() {
     setUploadedVideoFile(null)
     setCompressingVideo(false)
     setCompressionProgress(0)
+    setUploadingVideo(false)
   }
 
   const handleVideoFileSelect = async (file: File | null) => {
@@ -289,35 +310,36 @@ export default function ProjectsManagement() {
     }
   }
 
-  const buildProjectRequest = (payload: Record<string, any>) => {
-    if (payload.video_source === 'upload' && uploadedVideoFile) {
-      const requestFormData = new FormData()
-
-      Object.entries(payload).forEach(([key, value]) => {
-        if (key === 'uploaded_video_url') return
-
-        if (key === 'tags') {
-          requestFormData.append('tags', JSON.stringify(value))
-          return
-        }
-
-        requestFormData.append(key, String(value ?? ''))
-      })
-
-      requestFormData.append('uploaded_video_file', uploadedVideoFile)
-
-      return {
-        body: requestFormData,
-        headers: {} as Record<string, string>
-      }
-    }
-
-    return {
-      body: JSON.stringify(payload),
+  // Uploads the video straight to Supabase Storage using a signed URL from
+  // the backend, so the file never passes through the Vercel function body
+  // (which has a small request size limit).
+  const uploadVideoAndGetPublicUrl = async (token: string, file: File) => {
+    const urlResponse = await apiRequest(`${API_CONFIG.ENDPOINTS.PROJECTS}/upload-url`, {
+      method: 'POST',
       headers: {
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify({ filename: file.name })
+    })
+
+    if (!urlResponse.ok) {
+      throw new Error('Failed to get upload URL')
     }
+
+    const { data } = await urlResponse.json()
+
+    const putResponse = await fetch(data.signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'video/mp4' },
+      body: file
+    })
+
+    if (!putResponse.ok) {
+      throw new Error('Failed to upload video')
+    }
+
+    return data.publicUrl as string
   }
 
   const validateVideoSource = () => {
@@ -565,7 +587,7 @@ export default function ProjectsManagement() {
                       <input
                         type="file"
                         accept="video/*"
-                        disabled={compressingVideo}
+                        disabled={compressingVideo || uploadingVideo}
                         onChange={(e) => handleVideoFileSelect(e.target.files?.[0] || null)}
                         className="form-input"
                       />
@@ -604,10 +626,16 @@ export default function ProjectsManagement() {
                       if (showAddModal) createProject()
                       else if (selectedProject) updateProject(selectedProject.id)
                     }}
-                    disabled={compressingVideo}
+                    disabled={compressingVideo || uploadingVideo}
                     className="flex-1 glow-button disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {compressingVideo ? 'Compressing video…' : showAddModal ? 'Add Project' : 'Update Project'}
+                    {compressingVideo
+                      ? 'Compressing video…'
+                      : uploadingVideo
+                      ? 'Uploading video…'
+                      : showAddModal
+                      ? 'Add Project'
+                      : 'Update Project'}
                   </button>
                   <button
                     onClick={() => {
