@@ -45,6 +45,15 @@ const getYouTubeEmbedUrl = (url?: string) => {
   return match ? `https://www.youtube.com/embed/${match[1]}` : ''
 }
 
+// Newly uploaded videos are stored on Supabase Storage as absolute URLs.
+// This only resolves legacy records that still hold an old relative
+// `/uploads/...` path against the backend origin instead of the frontend's.
+const resolveVideoUrl = (url?: string) => {
+  if (!url) return ''
+  if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) return url
+  return `${API_CONFIG.BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
 interface PortfolioItem {
   id: string | number
   title: string
@@ -267,7 +276,7 @@ export default function Portfolio() {
                   />
                 ) : (item.videoSource === 'upload' && (item.uploadedVideoUrl || item.videoUrl)) ? (
                   <video
-                    src={item.uploadedVideoUrl || item.videoUrl}
+                    src={resolveVideoUrl(item.uploadedVideoUrl || item.videoUrl)}
                     className="absolute inset-0 w-full h-full object-cover"
                     controls
                     playsInline
@@ -283,7 +292,7 @@ export default function Portfolio() {
                   />
                 ) : (item.uploadedVideoUrl || item.videoUrl) ? (
                   <video
-                    src={item.uploadedVideoUrl || item.videoUrl}
+                    src={resolveVideoUrl(item.uploadedVideoUrl || item.videoUrl)}
                     className="absolute inset-0 w-full h-full object-cover"
                     controls
                     playsInline

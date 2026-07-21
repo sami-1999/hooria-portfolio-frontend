@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { FolderKanban, Search, Filter, Trash2, Edit, Plus, Download, X, Check } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { apiRequest, API_CONFIG } from '../../../config/api'
+import { compressVideoInBrowser } from '@/lib/videoCompression'
 
 type ProjectVideoType = 'short_video' | 'long_video' | 'ai_video'
 type VideoSourceType = 'youtube' | 'upload'
@@ -35,6 +36,8 @@ export default function ProjectsManagement() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null)
+  const [compressingVideo, setCompressingVideo] = useState(false)
+  const [compressionProgress, setCompressionProgress] = useState(0)
   const [formData, setFormData] = useState({
     title: '',
     category: 'PROJECT',
@@ -237,6 +240,8 @@ export default function ProjectsManagement() {
       active: project.active
     })
     setUploadedVideoFile(null)
+    setCompressingVideo(false)
+    setCompressionProgress(0)
     setShowEditModal(true)
   }
 
@@ -255,6 +260,33 @@ export default function ProjectsManagement() {
       active: true
     })
     setUploadedVideoFile(null)
+    setCompressingVideo(false)
+    setCompressionProgress(0)
+  }
+
+  const handleVideoFileSelect = async (file: File | null) => {
+    setFormData((prev) => ({ ...prev, youtube_url: '' }))
+
+    if (!file) {
+      setUploadedVideoFile(null)
+      return
+    }
+
+    setUploadedVideoFile(file)
+    setError('')
+    setCompressingVideo(true)
+    setCompressionProgress(0)
+
+    try {
+      const compressed = await compressVideoInBrowser(file, {
+        onProgress: setCompressionProgress
+      })
+      setUploadedVideoFile(compressed)
+    } catch (e) {
+      // compressVideoInBrowser already falls back to the original file on error
+    } finally {
+      setCompressingVideo(false)
+    }
   }
 
   const buildProjectRequest = (payload: Record<string, any>) => {
@@ -533,11 +565,8 @@ export default function ProjectsManagement() {
                       <input
                         type="file"
                         accept="video/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0] || null
-                          setUploadedVideoFile(file)
-                          setFormData({ ...formData, youtube_url: '' })
-                        }}
+                        disabled={compressingVideo}
+                        onChange={(e) => handleVideoFileSelect(e.target.files?.[0] || null)}
                         className="form-input"
                       />
                       {formData.uploaded_video_url && !uploadedVideoFile && (
@@ -545,8 +574,15 @@ export default function ProjectsManagement() {
                           Existing uploaded video is already saved. Select a new file only if you want to replace it.
                         </p>
                       )}
-                      {uploadedVideoFile && (
-                        <p className="text-xs text-neon-cyan">Selected file: {uploadedVideoFile.name}</p>
+                      {compressingVideo && (
+                        <p className="text-xs text-yellow-400">
+                          Compressing video… {Math.round(compressionProgress * 100)}%
+                        </p>
+                      )}
+                      {!compressingVideo && uploadedVideoFile && (
+                        <p className="text-xs text-neon-cyan">
+                          Selected file: {uploadedVideoFile.name} ({(uploadedVideoFile.size / (1024 * 1024)).toFixed(1)} MB)
+                        </p>
                       )}
                     </div>
                   )}
@@ -568,9 +604,10 @@ export default function ProjectsManagement() {
                       if (showAddModal) createProject()
                       else if (selectedProject) updateProject(selectedProject.id)
                     }}
-                    className="flex-1 glow-button"
+                    disabled={compressingVideo}
+                    className="flex-1 glow-button disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {showAddModal ? 'Add Project' : 'Update Project'}
+                    {compressingVideo ? 'Compressing video…' : showAddModal ? 'Add Project' : 'Update Project'}
                   </button>
                   <button
                     onClick={() => {
