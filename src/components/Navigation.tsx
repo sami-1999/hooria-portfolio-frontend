@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion'
-import { Menu, X, Mail, Phone } from 'lucide-react'
+import { Menu, X, Mail } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useSiteSettings } from '../hooks/useSiteSettings'
 
 export default function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { settings } = useSiteSettings()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -79,7 +81,7 @@ export default function Navigation() {
               transition={{ duration: 0.5, delay: 0.5 }}
             >
               <motion.a
-                href="mailto:hooria@example.com"
+                href={`mailto:${settings.contact_email}`}
                 className="p-2 text-light-gray hover:text-neon-cyan transition-colors duration-300"
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.9 }}
@@ -165,7 +167,7 @@ export default function Navigation() {
               {/* Mobile Contact Info */}
               <div className="border-t border-gray-800 pt-6 space-y-4">
                 <motion.a
-                  href="mailto:hooria@example.com"
+                  href={`mailto:${settings.contact_email}`}
                   className="flex items-center gap-3 text-light-gray hover:text-neon-cyan transition-colors duration-300"
                   whileHover={{ scale: 1.05 }}
                 >

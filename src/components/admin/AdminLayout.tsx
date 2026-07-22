@@ -70,6 +70,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: '/admin/visitors',
       icon: Users,
       current: pathname === '/admin/visitors'
+    },
+    {
+      name: 'Settings',
+      href: '/admin/settings',
+      icon: Settings,
+      current: pathname === '/admin/settings'
     }
   ]
 

@@ -58,7 +58,7 @@ export default function Hero() {
             className="glow-button flex items-center justify-center gap-2"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => window.open('mailto:hooria@example.com', '_blank')}
+            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
           >
             <Mail size={20} />
             Hire Me

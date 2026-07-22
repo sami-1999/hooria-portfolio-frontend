@@ -1,9 +1,13 @@
 import { motion } from 'framer-motion'
-import { Mail, Phone, Send } from 'lucide-react'
+import { Mail, MessageCircle, Send } from 'lucide-react'
 import { useState } from 'react'
 import { apiRequest, API_CONFIG } from '../config/api'
+import { useSiteSettings, getWhatsAppLink } from '../hooks/useSiteSettings'
 
 export default function Contact() {
+  const { settings } = useSiteSettings()
+  const whatsappLink = getWhatsAppLink(settings.whatsapp_number, "Hi Hooria, I'd like to discuss a video editing project.")
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -114,15 +118,44 @@ export default function Contact() {
             transition={{ duration: 0.8 }}
           >
             <div className="space-y-6">
-              <div className="flex items-center gap-4 text-light-gray hover:text-neon-cyan transition-colors duration-300 cursor-pointer">
+              <a
+                href={`mailto:${settings.contact_email}`}
+                className="flex items-center gap-4 text-light-gray hover:text-neon-cyan transition-colors duration-300"
+              >
                 <Mail className="w-5 h-5 text-neon-cyan" />
                 <span>EMAIL DIRECT</span>
-              </div>
-              
-              <div className="flex items-center gap-4 text-light-gray hover:text-neon-cyan transition-colors duration-300 cursor-pointer">
-                <Phone className="w-5 h-5 text-neon-cyan" />
-                <span>WHATSAPP SECURE LINE</span>
-              </div>
+              </a>
+
+              {whatsappLink ? (
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 text-light-gray hover:text-neon-cyan transition-colors duration-300"
+                >
+                  <MessageCircle className="w-5 h-5 text-neon-cyan" />
+                  <span>WHATSAPP SECURE LINE</span>
+                </a>
+              ) : (
+                <div className="flex items-center gap-4 text-gray-600">
+                  <MessageCircle className="w-5 h-5" />
+                  <span>WHATSAPP SECURE LINE</span>
+                </div>
+              )}
+
+              {whatsappLink && (
+                <motion.a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-lg font-semibold bg-[#25D366] text-dark-bg hover:brightness-110 transition-all duration-300"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <MessageCircle size={20} />
+                  Chat on WhatsApp
+                </motion.a>
+              )}
             </div>
           </motion.div>
 

@@ -19,7 +19,10 @@ export const API_CONFIG = {
 
     // Project endpoints
     PROJECTS: '/api/projects',
-    
+
+    // Site settings (contact email, WhatsApp, social links)
+    SETTINGS: '/api/settings',
+
     // Visitor endpoints
     VISITORS: '/api/visitors',
     
