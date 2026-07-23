@@ -8,7 +8,7 @@ import { apiRequest, API_CONFIG } from '../../../config/api'
 import { compressVideoInBrowser } from '@/lib/videoCompression'
 
 type ProjectVideoType = 'short_video' | 'long_video' | 'ai_video'
-type VideoSourceType = 'youtube' | 'upload'
+type VideoSourceType = 'youtube' | 'upload' | 'drive'
 
 interface Project {
   id: string
@@ -40,9 +40,6 @@ export default function ProjectsManagement() {
   const [compressingVideo, setCompressingVideo] = useState(false)
   const [compressionProgress, setCompressionProgress] = useState(0)
   const [uploadingVideo, setUploadingVideo] = useState(false)
-  const [driveLinkSource, setDriveLinkSource] = useState<'link' | 'upload'>('link')
-  const [uploadedStorageFile, setUploadedStorageFile] = useState<File | null>(null)
-  const [uploadingStorageFile, setUploadingStorageFile] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     category: 'PROJECT',
@@ -106,7 +103,7 @@ export default function ProjectsManagement() {
       if (formData.video_source === 'upload' && uploadedVideoFile) {
         setUploadingVideo(true)
         try {
-          uploadedVideoUrl = await uploadFileAndGetPublicUrl(token, uploadedVideoFile)
+          uploadedVideoUrl = await uploadVideoAndGetPublicUrl(token, uploadedVideoFile)
         } finally {
           setUploadingVideo(false)
         }
@@ -156,7 +153,7 @@ export default function ProjectsManagement() {
       if (formData.video_source === 'upload' && uploadedVideoFile) {
         setUploadingVideo(true)
         try {
-          uploadedVideoUrl = await uploadFileAndGetPublicUrl(token, uploadedVideoFile)
+          uploadedVideoUrl = await uploadVideoAndGetPublicUrl(token, uploadedVideoFile)
         } finally {
           setUploadingVideo(false)
         }
@@ -268,9 +265,6 @@ export default function ProjectsManagement() {
     setCompressingVideo(false)
     setCompressionProgress(0)
     setUploadingVideo(false)
-    setDriveLinkSource('link')
-    setUploadedStorageFile(null)
-    setUploadingStorageFile(false)
     setShowEditModal(true)
   }
 
@@ -289,9 +283,6 @@ export default function ProjectsManagement() {
       active: true,
       drive_link: ''
     })
-    setDriveLinkSource('link')
-    setUploadedStorageFile(null)
-    setUploadingStorageFile(false)
     setUploadedVideoFile(null)
     setCompressingVideo(false)
     setCompressionProgress(0)
@@ -323,38 +314,10 @@ export default function ProjectsManagement() {
     }
   }
 
-  // Uploads the picked file straight to Supabase Storage (no compression —
-  // this is for arbitrary attachments, not just video) and stores the
-  // resulting public URL as the project's drive_link.
-  const handleStorageFileSelect = async (file: File | null) => {
-    if (!file) {
-      setUploadedStorageFile(null)
-      return
-    }
-
-    const token = localStorage.getItem('adminToken')
-    if (!token) return
-
-    setUploadedStorageFile(file)
-    setError('')
-    setUploadingStorageFile(true)
-
-    try {
-      const publicUrl = await uploadFileAndGetPublicUrl(token, file)
-      setFormData((prev) => ({ ...prev, drive_link: publicUrl }))
-    } catch (e) {
-      setError('Failed to upload file')
-      setUploadedStorageFile(null)
-    } finally {
-      setUploadingStorageFile(false)
-    }
-  }
-
-  // Uploads a file straight to Supabase Storage using a signed URL from the
-  // backend, so it never passes through the Vercel function body (which has
-  // a small request size limit). Used for both video files and storage-link
-  // file uploads.
-  const uploadFileAndGetPublicUrl = async (token: string, file: File) => {
+  // Uploads the video straight to Supabase Storage using a signed URL from
+  // the backend, so the file never passes through the Vercel function body
+  // (which has a small request size limit).
+  const uploadVideoAndGetPublicUrl = async (token: string, file: File) => {
     const urlResponse = await apiRequest(`${API_CONFIG.ENDPOINTS.PROJECTS}/upload-url`, {
       method: 'POST',
       headers: {
@@ -396,6 +359,11 @@ export default function ProjectsManagement() {
 
     if (formData.video_source === 'upload' && !hasUpload) {
       setError('Please upload a video file when video source is Upload.')
+      return false
+    }
+
+    if (formData.video_source === 'drive' && !formData.drive_link.trim()) {
+      setError('Please add a Drive link when video source is Drive Link.')
       return false
     }
 
@@ -623,6 +591,7 @@ export default function ProjectsManagement() {
                     >
                       <option value="youtube">YouTube Link</option>
                       <option value="upload">Uploaded Video File</option>
+                      <option value="drive">Drive Link</option>
                     </select>
                   </div>
                   {formData.video_source === 'youtube' ? (
@@ -633,7 +602,7 @@ export default function ProjectsManagement() {
                       onChange={(e) => setFormData({ ...formData, youtube_url: e.target.value, uploaded_video_url: '' })}
                       className="form-input"
                     />
-                  ) : (
+                  ) : formData.video_source === 'upload' ? (
                     <div className="space-y-2">
                       <input
                         type="file"
@@ -658,60 +627,20 @@ export default function ProjectsManagement() {
                         </p>
                       )}
                     </div>
+                  ) : (
+                    <input
+                      type="url"
+                      placeholder="e.g. https://drive.google.com/..."
+                      value={formData.drive_link}
+                      onChange={(e) => setFormData({ ...formData, drive_link: e.target.value })}
+                      className="form-input"
+                    />
                   )}
                   <div className="grid grid-cols-2 gap-4">
                     <input type="text" placeholder="Duration" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} className="form-input" />
                     <input type="text" placeholder="Aspect ratio (16:9)" value={formData.aspect_ratio} onChange={(e) => setFormData({ ...formData, aspect_ratio: e.target.value })} className="form-input" />
                   </div>
                   <input type="text" placeholder="Tags (comma separated)" value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} className="form-input" />
-
-                  <div className="space-y-2">
-                    <label className="block text-xs text-gray-400">Storage link (optional) — paste a link or upload a file</label>
-                    <select
-                      value={driveLinkSource}
-                      onChange={(e) => {
-                        setDriveLinkSource(e.target.value as 'link' | 'upload')
-                        setUploadedStorageFile(null)
-                      }}
-                      className="form-input"
-                    >
-                      <option value="link">Paste Link (Drive, Dropbox, etc.)</option>
-                      <option value="upload">Upload File</option>
-                    </select>
-
-                    {driveLinkSource === 'link' ? (
-                      <input
-                        type="url"
-                        placeholder="e.g. https://drive.google.com/..."
-                        value={formData.drive_link}
-                        onChange={(e) => setFormData({ ...formData, drive_link: e.target.value })}
-                        className="form-input"
-                      />
-                    ) : (
-                      <div className="space-y-2">
-                        <input
-                          type="file"
-                          disabled={uploadingStorageFile}
-                          onChange={(e) => handleStorageFileSelect(e.target.files?.[0] || null)}
-                          className="form-input"
-                        />
-                        {formData.drive_link && !uploadedStorageFile && (
-                          <p className="text-xs text-gray-400">
-                            Existing storage file/link is already saved. Select a new file only if you want to replace it.
-                          </p>
-                        )}
-                        {uploadingStorageFile && (
-                          <p className="text-xs text-yellow-400">Uploading file…</p>
-                        )}
-                        {!uploadingStorageFile && uploadedStorageFile && (
-                          <p className="text-xs text-neon-cyan">
-                            Uploaded: {uploadedStorageFile.name} ({(uploadedStorageFile.size / (1024 * 1024)).toFixed(1)} MB)
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
                   <textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="form-input min-h-[100px]" />
                   <div className="flex items-center gap-2">
                     <input type="checkbox" id="active" checked={formData.active} onChange={(e) => setFormData({ ...formData, active: e.target.checked })} className="rounded" />
@@ -725,15 +654,13 @@ export default function ProjectsManagement() {
                       if (showAddModal) createProject()
                       else if (selectedProject) updateProject(selectedProject.id)
                     }}
-                    disabled={compressingVideo || uploadingVideo || uploadingStorageFile}
+                    disabled={compressingVideo || uploadingVideo}
                     className="flex-1 glow-button disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {compressingVideo
                       ? 'Compressing video…'
                       : uploadingVideo
                       ? 'Uploading video…'
-                      : uploadingStorageFile
-                      ? 'Uploading file…'
                       : showAddModal
                       ? 'Add Project'
                       : 'Update Project'}

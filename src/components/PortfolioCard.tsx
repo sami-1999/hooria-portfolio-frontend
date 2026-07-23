@@ -19,7 +19,18 @@ export default function PortfolioCard({ item, delay = 0 }: { item: PortfolioItem
     >
       {/* Video */}
       <div className="relative aspect-video bg-dark-bg overflow-hidden">
-        {item.videoSource === 'youtube' && getYouTubeEmbedUrl(item.youtubeUrl || item.videoUrl) ? (
+        {item.videoSource === 'drive' && item.driveLink ? (
+          <a
+            href={item.driveLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-neon-cyan/20 to-purple-accent/20 hover:from-neon-cyan/30 hover:to-purple-accent/30 transition-colors duration-300"
+          >
+            <FolderOpen className="w-14 h-14 text-neon-cyan/80" />
+            <span className="text-sm font-semibold text-neon-cyan">Watch on Drive</span>
+          </a>
+        ) : item.videoSource === 'youtube' && getYouTubeEmbedUrl(item.youtubeUrl || item.videoUrl) ? (
           <iframe
             src={getYouTubeEmbedUrl(item.youtubeUrl || item.videoUrl)}
             title={item.title}
@@ -93,19 +104,6 @@ export default function PortfolioCard({ item, delay = 0 }: { item: PortfolioItem
             </span>
           ))}
         </div>
-
-        {item.driveLink && (
-          <a
-            href={item.driveLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center justify-center gap-2 w-full py-2 rounded-lg text-sm font-semibold border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors duration-300"
-          >
-            <FolderOpen size={16} />
-            View Files
-          </a>
-        )}
       </div>
     </motion.div>
   )

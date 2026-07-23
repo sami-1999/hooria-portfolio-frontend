@@ -3,7 +3,7 @@ import { apiRequest, API_CONFIG } from '../config/api'
 
 export type ProjectType = 'short_video' | 'long_video' | 'ai_video'
 type LegacyProjectType = 'SHORT_VIDEO' | 'LONG_VIDEO' | 'AI_VIDEO'
-export type VideoSourceType = 'youtube' | 'upload'
+export type VideoSourceType = 'youtube' | 'upload' | 'drive'
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   short_video: 'SHORT VIDEO',
