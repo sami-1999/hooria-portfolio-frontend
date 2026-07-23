@@ -72,6 +72,7 @@ export interface PortfolioItem {
   videoUrl?: string
   youtubeUrl?: string
   uploadedVideoUrl?: string
+  driveLink?: string
 }
 
 export const fallbackPortfolioItems: PortfolioItem[] = [
@@ -169,7 +170,8 @@ export function usePortfolioItems() {
                 : [],
               videoUrl: project.videoUrl ?? project.video_url ?? '',
               youtubeUrl: project.youtubeUrl ?? project.youtube_url ?? '',
-              uploadedVideoUrl: project.uploadedVideoUrl ?? project.uploaded_video_url ?? ''
+              uploadedVideoUrl: project.uploadedVideoUrl ?? project.uploaded_video_url ?? '',
+              driveLink: project.driveLink ?? project.drive_link ?? ''
             }))
 
             setPortfolioItems(mappedProjects)

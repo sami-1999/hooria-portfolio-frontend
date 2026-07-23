@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { PlayCircle } from 'lucide-react'
+import { PlayCircle, FolderOpen } from 'lucide-react'
 import {
   PortfolioItem,
   getProjectTypeLabel,
@@ -83,7 +83,7 @@ export default function PortfolioCard({ item, delay = 0 }: { item: PortfolioItem
         <p className="text-light-gray text-sm mb-4 line-clamp-2">
           {item.description}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mb-4">
           {item.tags.map((tag, tagIndex) => (
             <span
               key={tagIndex}
@@ -93,6 +93,19 @@ export default function PortfolioCard({ item, delay = 0 }: { item: PortfolioItem
             </span>
           ))}
         </div>
+
+        {item.driveLink && (
+          <a
+            href={item.driveLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-center gap-2 w-full py-2 rounded-lg text-sm font-semibold border border-neon-cyan/40 text-neon-cyan hover:bg-neon-cyan/10 transition-colors duration-300"
+          >
+            <FolderOpen size={16} />
+            View Files
+          </a>
+        )}
       </div>
     </motion.div>
   )
