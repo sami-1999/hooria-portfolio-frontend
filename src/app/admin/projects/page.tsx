@@ -97,6 +97,7 @@ export default function ProjectsManagement() {
     if (!token) return
 
     try {
+      if (!validateRequiredFields()) return
       if (!validateVideoSource()) return
 
       let uploadedVideoUrl = formData.uploaded_video_url
@@ -135,7 +136,8 @@ export default function ProjectsManagement() {
         setShowAddModal(false)
         resetForm()
       } else {
-        setError('Failed to create project')
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.message || 'Failed to create project')
       }
     } catch (e) {
       setError('Network error. Please try again.')
@@ -147,6 +149,7 @@ export default function ProjectsManagement() {
     if (!token) return
 
     try {
+      if (!validateRequiredFields()) return
       if (!validateVideoSource()) return
 
       let uploadedVideoUrl = formData.uploaded_video_url
@@ -186,7 +189,8 @@ export default function ProjectsManagement() {
         setSelectedProject(null)
         resetForm()
       } else {
-        setError('Failed to update project')
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.message || 'Failed to update project')
       }
     } catch (e) {
       setError('Network error. Please try again.')
@@ -344,6 +348,15 @@ export default function ProjectsManagement() {
     }
 
     return data.publicUrl as string
+  }
+
+  const validateRequiredFields = () => {
+    if (!formData.title.trim() || !formData.category.trim() || !formData.description.trim()) {
+      setError('Title, category, and description are required.')
+      return false
+    }
+    setError('')
+    return true
   }
 
   const validateVideoSource = () => {
