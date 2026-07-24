@@ -351,8 +351,8 @@ export default function ProjectsManagement() {
   }
 
   const validateRequiredFields = () => {
-    if (!formData.title.trim() || !formData.category.trim() || !formData.description.trim()) {
-      setError('Title, category, and description are required.')
+    if (!formData.title.trim() || !formData.category.trim()) {
+      setError('Title and category are required.')
       return false
     }
     setError('')
